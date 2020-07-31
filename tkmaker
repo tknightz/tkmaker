@@ -1,0 +1,136 @@
+usage() {
+# `cat << EOF` This means that cat should stop reading when EOF is detected
+cat << EOF  
+Create a video from image, audio and subtitles.
+Usage: ./tkmaker --OPTIONS [value] 
+
+-h, -help,          --help                  Display help
+
+-A, -addsub,        --addsub                Add sub to video.
+
+-I, -img2vid,       --img2vid               Merge image and audio into video.
+
+-F, -full,          --full                  Merge image, audio and subtitles into video.
+
+-i, -img,           --img                   Set image source file.
+
+-a, -audio,         --audio                 Set audio source file.
+
+-s, -sub,           --sub                   Set subtitles source file.
+
+-v, -video,         --video                 Set video source for adding sub.
+
+EOF
+# EOF is found above and hence cat command stops reading. This is equivalent to echo but much neater when printing out.
+}
+
+function addsub(){
+    ffmpeg-bar -i "$1" -vf "subtitles="$2":force_style='FontSize=13,OutlineColour=&H80000000,BorderStyle=3,Outline=1,Shadow=0,MarginV=20'" -c:a "[Subtitled]-${1%.*}-$(date +'%Y%m%d_%H%M')".mp4 
+}
+
+
+function makeVideoScript(){
+    time=$(ffmpeg -i "$2" 2>&1 | grep Duration | cut -d ' ' -f 4 | sed s/,//)
+    if [[ "${3##*.}" == "ass" ]]
+    then
+        filter=""
+    else
+        filter=":force_style='FontName=URW Gothic,FontSize=20,OutlineColour=&H80000000,Outline=1,Shadow=0,MarginV=20'"
+    fi
+
+    if [[ "${1##*.}" == "gif" ]]
+    then
+        ffmpeg-bar -ignore_loop 0 -i "$1" -i "$2" -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2,subtitles="$3"$filter" -strict -2 -c:v libx264 -threads 4 -c:a aac -b:a 192k -pix_fmt yuv420p -shortest -t $time "${2%.*}-$(date +'%Y%m%d_%H%M')".mp4 
+    else
+        ffmpeg-bar -loop 1 -i "$1" -i "$2" -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2,subtitles="$3"$filter" -strict -2 -c:v libx264 -threads 4 -c:a aac -b:a 192k -pix_fmt yuv420p -shortest -t $time "${2%.*}-$(date +'%Y%m%d_%H%M')".mp4 
+    fi
+}
+
+function img2vid(){
+    if [[ "${1##*.}" == "gif" ]]
+    then
+        time=$(ffmpeg -i "$2" 2>&1 | grep Duration | cut -d ' ' -f 4 | sed s/,//)
+        ffmpeg-bar -ignore_loop 0 -i "$1" -i "$2" -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" -strict -2 -c:v libx264 -threads 4 -c:a aac -b:a 192k -pix_fmt yuv420p -shortest -t $time "[Gif2vid]-${2%.*}-$(date +'%Y%m%d_%H%M')".mp4 
+    else 
+        ffmpeg-bar -loop 1 -i "$1" -i "$2" -c:v libx264 -tune stillimage -c:a aac -b:a 192k -pix_fmt yuv420p -shortest "[Img2vid]-${2%.*}-$(date +'%Y%m%d_%H%M')".mp4
+    fi
+}
+
+options=$(getopt -l "img:,audio:,sub:,video:,addsub,gif2vid,img2vid,full,help" -o "i:a:s:v:AGIFh" -a -- "$@")
+eval set -- "$options"
+
+audio_src=""
+sub_src=""
+video_src=""
+img_src=""
+bool_addsub=0
+bool_img2vid=0
+bool_full=0
+
+while true;
+do
+    case $1 in
+        -A|--addsub)
+            bool_addsub=1
+            ;;
+        -I|--img2vid)
+            bool_img2vid=1
+            ;;
+        -F|--full)
+            bool_full=1
+            ;;
+        -g|--gif)
+            shift
+            gif_src=$1
+            ;;
+        -i|--img)
+            shift
+            img_src=$1
+            ;;
+        -a|--audio)
+            shift
+            audio_src=$1
+            ;;
+        -s|--sub)
+            shift
+            sub_src=$1
+            ;;
+        -v|--video)
+            shift
+            video_src=$1
+            ;;
+        -h|--help)
+            usage
+            ;;
+        --)
+            shift
+            break;;
+    esac
+    shift
+done
+
+if [[ ${bool_addsub} == 1 ]]
+then
+    if [[ ${video_src} == "" || ${sub_src} == "" ]]
+    then
+        echo "Need video and subtitles to finish task."
+    else
+        addsub $video_src $sub_src
+    fi
+elif [[ ${bool_full} == 1 ]]
+then
+    if [[ ${img_src} == "" || ${audio_src} == "" || ${sub_src} == "" ]]
+    then
+        echo "Need image, audio and subtitles to make a video."
+    else
+        makeVideoScript $img_src $audio_src $sub_src
+    fi
+elif [[ ${bool_img2vid} == 1 ]]
+then
+    if [[ ${img_src} == "" || ${audio_src} == "" ]]
+    then 
+        echo "Need image, audio to make a video."
+    else
+        img2vid $img_src $audio_src
+    fi
+fi
