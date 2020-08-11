@@ -28,21 +28,29 @@ function addsub(){
     ffmpeg-bar -i "$1" -vf "subtitles="$2":force_style='FontSize=13,OutlineColour=&H80000000,BorderStyle=3,Outline=1,Shadow=0,MarginV=20'" -c:a "[Subtitled]-${1%.*}-$(date +'%Y%m%d_%H%M')".mp4 
 }
 
+function makeVideoAss(){
+    time=$(ffmpeg -i "$2" 2>&1 | grep Duration | cut -d ' ' -f 4 | sed s/,//)
+    ffmpeg -loglevel quiet -ignore_loop 0 -i "$1" -i "$2" -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2,ass="$3"" -strict -2 -c:v libx264 -threads 4 -c:a aac -b:a 192k -pix_fmt yuv420p -shortest -t $time out.mp4 
+    echo 'Done'
+}
 
 function makeVideoScript(){
     time=$(ffmpeg -i "$2" 2>&1 | grep Duration | cut -d ' ' -f 4 | sed s/,//)
     if [[ "${3##*.}" == "ass" ]]
     then
-        filter=""
+        if [[ "${1##*.}" == "gif" ]]
+        then
+            ffmpeg-bar -ignore_loop 0 -i "$1" -i "$2" -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2,ass="$3"" -strict -2 -c:v libx264 -threads 4 -c:a aac -b:a 192k -pix_fmt yuv420p -t $time "${2%.*}-$(date +'%Y%m%d_%H%M')".mp4 
+        else
+            ffmpeg-bar -loop 1 -i "$1" -i "$2" -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2,ass="$3"" -strict -2 -c:v libx264 -threads 4 -c:a aac -b:a 192k -pix_fmt yuv420p -t $time "${2%.*}-$(date +'%Y%m%d_%H%M')".mp4 
+        fi
     else
-        filter=":force_style='FontName=URW Gothic,FontSize=20,OutlineColour=&H80000000,Outline=1,Shadow=0,MarginV=20'"
-    fi
-
-    if [[ "${1##*.}" == "gif" ]]
-    then
-        ffmpeg-bar -ignore_loop 0 -i "$1" -i "$2" -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2,subtitles="$3"$filter" -strict -2 -c:v libx264 -threads 4 -c:a aac -b:a 192k -pix_fmt yuv420p -shortest -t $time "${2%.*}-$(date +'%Y%m%d_%H%M')".mp4 
-    else
-        ffmpeg-bar -loop 1 -i "$1" -i "$2" -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2,subtitles="$3"$filter" -strict -2 -c:v libx264 -threads 4 -c:a aac -b:a 192k -pix_fmt yuv420p -shortest -t $time "${2%.*}-$(date +'%Y%m%d_%H%M')".mp4 
+        if [[ "${1##*.}" == "gif" ]]
+        then
+            ffmpeg-bar -ignore_loop 0 -i "$1" -i "$2" -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2,subtitles="$3":force_style='FontName=URW Gothic,FontSize=20,OutlineColour=&H80000000,Outline=1,Shadow=0,MarginV=20'" -strict -2 -c:v libx264 -threads 4 -c:a aac -b:a 192k -pix_fmt yuv420p -t $time "${2%.*}-$(date +'%Y%m%d_%H%M')".mp4 
+        else
+            ffmpeg-bar -loop 1 -i "$1" -i "$2" -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2,subtitles="$3":force_style='FontName=URW Gothic,FontSize=20,OutlineColour=&H80000000,Outline=1,Shadow=0,MarginV=20'" -strict -2 -c:v libx264 -threads 4 -c:a aac -b:a 192k -pix_fmt yuv420p -t $time "${2%.*}-$(date +'%Y%m%d_%H%M')".mp4 
+        fi
     fi
 }
 
@@ -134,3 +142,6 @@ then
         img2vid $img_src $audio_src
     fi
 fi
+
+
+
