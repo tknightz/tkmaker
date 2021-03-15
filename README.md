@@ -21,3 +21,6 @@ Example :
 ```shell
     tkmaker --help
 ```
+
+## Demo
+A lyric video was rendered by tkmaker. [Click here](https://www.youtube.com/watch?v=Q8CjOPsLenY)

@@ -47,7 +47,7 @@ function makeVideoScript(){
     else
         if [[ "${1##*.}" == "gif" ]]
         then
-            ffmpeg-bar -ignore_loop 0 -i "$1" -i "$2" -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2,subtitles="$3":force_style='FontName=URW Gothic,FontSize=20,OutlineColour=&H80000000,Outline=1,Shadow=0,MarginV=20'" -strict -2 -c:v libx264 -threads 4 -c:a aac -b:a 192k -pix_fmt yuv420p -t $time "${2%.*}-$(date +'%Y%m%d_%H%M')".mp4 
+            ffmpeg-bar -ignore_loop 0 -i "$1" -i "$2" -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2,subtitles="$3":force_style='FontName=IBMPlexMono-Medium,FontSize=20,OutlineColour=&H80000000,Outline=1,Shadow=0,MarginV=20'" -strict -2 -c:v libx264 -threads 4 -c:a aac -b:a 192k -pix_fmt yuv420p -t $time "${2%.*}-$(date +'%Y%m%d_%H%M')".mp4 
         else
             ffmpeg-bar -loop 1 -i "$1" -i "$2" -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2,subtitles="$3":force_style='FontName=URW Gothic,FontSize=20,OutlineColour=&H80000000,Outline=1,Shadow=0,MarginV=20'" -strict -2 -c:v libx264 -threads 4 -c:a aac -b:a 192k -pix_fmt yuv420p -t $time "${2%.*}-$(date +'%Y%m%d_%H%M')".mp4 
         fi
